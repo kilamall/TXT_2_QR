@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import QRScanner from '../components/QRScanner';
@@ -18,11 +19,30 @@ const ScanScreen = () => {
     timestamp: Date;
   } | null>(null);
 
+  const isSimulator = Platform.OS === 'ios' && !Platform.isPad && Platform.isTVOS === false;
+
   const handleScanned = (data: string) => {
     setLastScanned({
       data,
       timestamp: new Date(),
     });
+  };
+
+  const handleScanPress = () => {
+    // Check if running in simulator
+    if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
+      // Try to detect simulator
+      Alert.alert(
+        'QR Scanner',
+        'QR code scanning works best on a real device. Test on your iPhone for full functionality!',
+        [
+          {text: 'OK', onPress: () => setShowScanner(true)},
+          {text: 'Cancel', style: 'cancel'}
+        ]
+      );
+    } else {
+      setShowScanner(true);
+    }
   };
 
   if (showScanner) {
@@ -48,7 +68,7 @@ const ScanScreen = () => {
         {/* Scan Button */}
         <TouchableOpacity
           style={styles.scanButton}
-          onPress={() => setShowScanner(true)}>
+          onPress={handleScanPress}>
           <Ionicons name="qr-code-outline" size={80} color="#fff" />
           <Text style={styles.scanButtonText}>Start Scanning</Text>
           <Text style={styles.scanButtonSubtext}>

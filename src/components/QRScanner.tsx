@@ -9,7 +9,15 @@ import {
   Dimensions,
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
-import {BarCodeScanner} from 'expo-barcode-scanner';
+
+// Gracefully handle barcode scanner
+let BarCodeScanner: any;
+try {
+  const barcodeScannerModule = require('expo-barcode-scanner');
+  BarCodeScanner = barcodeScannerModule.BarCodeScanner;
+} catch (error) {
+  console.log('BarCodeScanner not available in this environment');
+}
 
 interface QRScannerProps {
   onClose: () => void;
@@ -25,6 +33,14 @@ const QRScanner: React.FC<QRScannerProps> = ({onClose, onScanned}) => {
 
   useEffect(() => {
     const getBarCodeScannerPermissions = async () => {
+      if (!BarCodeScanner) {
+        Alert.alert(
+          'Not Available',
+          'QR code scanning is not available in the simulator. Please test on a real device!',
+          [{text: 'OK', onPress: onClose}]
+        );
+        return;
+      }
       const {status} = await BarCodeScanner.requestPermissionsAsync();
       setHasPermission(status === 'granted');
     };
@@ -117,6 +133,24 @@ const QRScanner: React.FC<QRScannerProps> = ({onClose, onScanned}) => {
           <Text style={styles.title}>Camera Access Denied</Text>
           <Text style={styles.subtitle}>
             Please enable camera access in Settings to scan QR codes
+          </Text>
+          <TouchableOpacity style={styles.button} onPress={onClose}>
+            <Text style={styles.buttonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  if (!BarCodeScanner) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.content}>
+          <Ionicons name="warning" size={80} color="#FF9500" />
+          <Text style={styles.title}>Simulator Limitation</Text>
+          <Text style={styles.subtitle}>
+            QR code scanning only works on real devices.{'\n\n'}
+            Use your iPhone with Expo Go to test this feature!
           </Text>
           <TouchableOpacity style={styles.button} onPress={onClose}>
             <Text style={styles.buttonText}>Go Back</Text>
