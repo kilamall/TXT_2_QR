@@ -44,7 +44,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow TXT 2 QR to access your camera to scan text from images"
+          "cameraPermission": "Allow TXT 2 QR to access your camera to scan and read QR codes"
         }
       ],
       [
@@ -53,7 +53,8 @@
           "photosPermission": "Allow TXT 2 QR to access your photos to select images",
           "savePhotosPermission": "Allow TXT 2 QR to save QR codes to your photo library"
         }
-      ]
+      ],
+      "expo-barcode-scanner"
     ],
     "extra": {
       "eas": {
