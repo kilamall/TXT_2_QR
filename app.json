@@ -2,6 +2,7 @@
   "expo": {
     "name": "TXT 2 QR",
     "slug": "txt2qr",
+    "scheme": "txt2qr",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
