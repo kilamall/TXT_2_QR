@@ -42,7 +42,7 @@ const ManualInput: React.FC<ManualInputProps> = ({onSubmit}) => {
   const handleImagePick = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         quality: 1,
       });
 

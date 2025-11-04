@@ -136,7 +136,7 @@ const CameraScanner: React.FC<CameraScannerProps> = ({
 
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       quality: 1,
     });
 
