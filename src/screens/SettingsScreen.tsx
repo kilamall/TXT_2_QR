@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   Linking,
   Alert,
-  SafeAreaView,
   Switch,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {Ionicons} from '@expo/vector-icons';
 
 const SettingsScreen = () => {

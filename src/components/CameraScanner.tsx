@@ -14,6 +14,8 @@ import {
 import {Ionicons} from '@expo/vector-icons';
 import {CameraView, useCameraPermissions} from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import {extractTextFromImage} from '../utils/cloudOCR';
 
 interface CameraScannerProps {
   onTextDetected: (text: string) => void;
@@ -30,7 +32,75 @@ const CameraScanner: React.FC<CameraScannerProps> = ({
   const [showCamera, setShowCamera] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [extractedText, setExtractedText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [ocrStatus, setOcrStatus] = useState('');
+  const [useManualEntry, setUseManualEntry] = useState(false);
   const cameraRef = useRef<any>(null);
+
+  const processWithOCR = async (imageUri: string) => {
+    setIsProcessing(true);
+    setOcrStatus('Converting image...');
+
+    try {
+      // Convert image to base64
+      const base64 = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Extract text using cloud OCR
+      const text = await extractTextFromImage(base64, (status) => {
+        setOcrStatus(status);
+      });
+
+      setIsProcessing(false);
+      setExtractedText(text);
+
+      Alert.alert(
+        '✅ Text Extracted!',
+        `Found: ${text.substring(0, 150)}${text.length > 150 ? '...' : ''}`,
+        [
+          {
+            text: 'Use This',
+            onPress: () => onTextDetected(text),
+          },
+          {
+            text: 'Edit First',
+            onPress: () => {
+              // Show manual editing view
+              setUseManualEntry(true);
+            },
+          },
+          {
+            text: 'Try Again',
+            style: 'cancel',
+            onPress: () => {
+              setCapturedImage(null);
+              setExtractedText('');
+            },
+          },
+        ]
+      );
+    } catch (error: any) {
+      setIsProcessing(false);
+      Alert.alert(
+        'OCR Failed',
+        error.message || 'Could not extract text. Would you like to enter it manually?',
+        [
+          {
+            text: 'Enter Manually',
+            onPress: () => setUseManualEntry(true),
+          },
+          {
+            text: 'Try Another Image',
+            onPress: () => {
+              setCapturedImage(null);
+              setExtractedText('');
+            },
+          },
+        ]
+      );
+    }
+  };
 
   const handleTakePicture = async () => {
     if (cameraRef.current) {
@@ -38,6 +108,9 @@ const CameraScanner: React.FC<CameraScannerProps> = ({
         const photo = await cameraRef.current.takePictureAsync();
         setShowCamera(false);
         setCapturedImage(photo.uri);
+        
+        // Automatically start OCR
+        await processWithOCR(photo.uri);
       } catch (error) {
         Alert.alert('Error', 'Failed to take picture');
       }
@@ -52,6 +125,9 @@ const CameraScanner: React.FC<CameraScannerProps> = ({
 
     if (!result.canceled && result.assets[0]) {
       setCapturedImage(result.assets[0].uri);
+      
+      // Automatically start OCR
+      await processWithOCR(result.assets[0].uri);
     }
   };
 
@@ -104,8 +180,35 @@ const CameraScanner: React.FC<CameraScannerProps> = ({
     );
   }
 
-  // Text extraction view
-  if (capturedImage) {
+  // Processing OCR view
+  if (isProcessing) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.overlay}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Processing Image</Text>
+          </View>
+
+          <View style={styles.content}>
+            <ActivityIndicator size="large" color="#007AFF" />
+            <Text style={styles.title}>Extracting Text...</Text>
+            <Text style={styles.subtitle}>{ocrStatus}</Text>
+            
+            {capturedImage && (
+              <Image source={{uri: capturedImage}} style={styles.previewImage} />
+            )}
+
+            <Text style={styles.processingTip}>
+              Using AI to read text from your image...
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // Manual text entry view (if OCR fails or user wants to edit)
+  if (capturedImage && useManualEntry) {
     return (
       <KeyboardAvoidingView 
         style={styles.container}
@@ -229,40 +332,41 @@ const CameraScanner: React.FC<CameraScannerProps> = ({
   // Camera view
   return (
     <View style={styles.container}>
-      <CameraView style={StyleSheet.absoluteFill} ref={cameraRef} facing="back">
-        <View style={styles.overlay}>
-          <View style={styles.header}>
-            <TouchableOpacity 
-              style={styles.closeButton} 
-              onPress={() => setShowCamera(false)}>
-              <Ionicons name="arrow-back" size={30} color="#fff" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.scanFrame}>
-            <View style={[styles.corner, styles.topLeft]} />
-            <View style={[styles.corner, styles.topRight]} />
-            <View style={[styles.corner, styles.bottomLeft]} />
-            <View style={[styles.corner, styles.bottomRight]} />
-          </View>
-
-          <View style={styles.bottomControls}>
-            <Text style={styles.instructions}>
-              Position text clearly in the frame
-            </Text>
-            <Text style={styles.subInstructions}>
-              Make sure text is visible and well-lit
-            </Text>
-            <TouchableOpacity 
-              style={styles.captureButton} 
-              onPress={handleTakePicture}>
-              <View style={styles.captureButtonInner}>
-                <Ionicons name="camera" size={40} color="#007AFF" />
-              </View>
-            </TouchableOpacity>
-          </View>
+      <CameraView style={StyleSheet.absoluteFill} ref={cameraRef} facing="back" />
+      
+      {/* Overlay on top of camera */}
+      <View style={styles.cameraOverlay}>
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.closeButton} 
+            onPress={() => setShowCamera(false)}>
+            <Ionicons name="arrow-back" size={30} color="#fff" />
+          </TouchableOpacity>
         </View>
-      </CameraView>
+
+        <View style={styles.scanFrame}>
+          <View style={[styles.corner, styles.topLeft]} />
+          <View style={[styles.corner, styles.topRight]} />
+          <View style={[styles.corner, styles.bottomLeft]} />
+          <View style={[styles.corner, styles.bottomRight]} />
+        </View>
+
+        <View style={styles.bottomControls}>
+          <Text style={styles.instructions}>
+            Position text clearly in the frame
+          </Text>
+          <Text style={styles.subInstructions}>
+            Make sure text is visible and well-lit
+          </Text>
+          <TouchableOpacity 
+            style={styles.captureButton} 
+            onPress={handleTakePicture}>
+            <View style={styles.captureButtonInner}>
+              <Ionicons name="camera" size={40} color="#007AFF" />
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 };
@@ -275,6 +379,11 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'space-between',
+  },
+  cameraOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'space-between',
+    pointerEvents: 'box-none',
   },
   header: {
     flexDirection: 'row',
@@ -498,6 +607,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  previewImage: {
+    width: 200,
+    height: 150,
+    borderRadius: 10,
+    marginTop: 20,
+    resizeMode: 'contain',
+    backgroundColor: '#f5f5f5',
+  },
+  processingTip: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginTop: 15,
+    textAlign: 'center',
   },
 });
 
