@@ -1,4 +1,4 @@
-import { initializeApp, FirebaseApp } from 'firebase/app';
+import {Platform} from 'react-native';
 
 // Firebase configuration
 // TODO: Replace with your Firebase project credentials
@@ -12,20 +12,33 @@ const firebaseConfig = {
   appId: "1:123456789:web:abcdef123456"
 };
 
-// Initialize Firebase
-const app: FirebaseApp = initializeApp(firebaseConfig);
+// Initialize Firebase (lazy load to avoid bundling issues on mobile)
+let app: any = null;
+let storage: any = null;
 
-// Initialize Cloud Storage (lazy load for web compatibility)
-let storage: any;
+const initializeFirebase = () => {
+  if (!app) {
+    const { initializeApp } = require('firebase/app');
+    app = initializeApp(firebaseConfig);
+  }
+  return app;
+};
+
+export const getFirebaseApp = () => {
+  return initializeFirebase();
+};
+
 export const getFirebaseStorage = () => {
   if (!storage) {
+    const firebaseApp = initializeFirebase();
     const { getStorage } = require('firebase/storage');
-    storage = getStorage(app);
+    storage = getStorage(firebaseApp);
   }
   return storage;
 };
 
+// For backwards compatibility
 export { storage };
 
-export default app;
+export default Platform.OS === 'web' ? initializeFirebase() : null;
 
