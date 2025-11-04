@@ -1,11 +1,15 @@
 import React from 'react';
 import {Platform, StyleSheet, View} from 'react-native';
-import {
-  BannerAd,
-  BannerAdSize,
-  TestIds,
-} from 'react-native-google-mobile-ads';
 import {usePremium} from '../context/PremiumContext';
+
+// Only import AdMob on native platforms
+let BannerAd: any, BannerAdSize: any, TestIds: any;
+if (Platform.OS !== 'web') {
+  const adMob = require('react-native-google-mobile-ads');
+  BannerAd = adMob.BannerAd;
+  BannerAdSize = adMob.BannerAdSize;
+  TestIds = adMob.TestIds;
+}
 
 // AdMob Test IDs - Replace with your real IDs for production
 // Get your IDs from: https://admob.google.com/
@@ -22,21 +26,23 @@ interface AdBannerProps {
 }
 
 const AdBanner: React.FC<AdBannerProps> = ({
-  size = BannerAdSize.ANCHORED_ADAPTIVE_BANNER,
+  size,
   style,
 }) => {
   const {isPremium} = usePremium();
 
-  // Don't show ads if user has premium
-  if (isPremium) {
+  // Don't show ads on web or if user has premium
+  if (Platform.OS === 'web' || isPremium || !BannerAd) {
     return null;
   }
+
+  const adSize = size || BannerAdSize.ANCHORED_ADAPTIVE_BANNER;
 
   return (
     <View style={[styles.container, style]}>
       <BannerAd
         unitId={BANNER_AD_UNIT_ID}
-        size={size}
+        size={adSize}
         requestOptions={{
           requestNonPersonalizedAdsOnly: false,
         }}
