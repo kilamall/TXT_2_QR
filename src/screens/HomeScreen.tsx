@@ -59,18 +59,18 @@ const HomeScreen = () => {
           </Text>
         </View>
 
-        {/* Camera Scan Button - Hide on web */}
-        {Platform.OS !== 'web' && (
-          <TouchableOpacity
-            style={styles.cameraButton}
-            onPress={() => setShowCamera(true)}>
-            <Ionicons name="camera" size={40} color="#fff" />
-            <Text style={styles.cameraButtonText}>Scan Text with Camera</Text>
-            <Text style={styles.cameraButtonSubtext}>
-              Use OCR to extract text from images
-            </Text>
-          </TouchableOpacity>
-        )}
+        {/* Camera Scan Button - Works on web too! */}
+        <TouchableOpacity
+          style={styles.cameraButton}
+          onPress={() => setShowCamera(true)}>
+          <Ionicons name="camera" size={40} color="#fff" />
+          <Text style={styles.cameraButtonText}>Scan Text with Camera</Text>
+          <Text style={styles.cameraButtonSubtext}>
+            {Platform.OS === 'web' 
+              ? 'Upload image or use device camera (mobile browsers)'
+              : 'Use OCR to extract text from images'}
+          </Text>
+        </TouchableOpacity>
 
         {/* Manual Input */}
         <ManualInput onSubmit={handleManualSubmit} />
