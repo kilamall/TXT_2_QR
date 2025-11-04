@@ -6,11 +6,18 @@ import {
   signOut,
   onAuthStateChanged,
   User,
-  GoogleAuthProvider,
-  signInWithPopup,
 } from 'firebase/auth';
 import {Alert, Platform} from 'react-native';
 import app from '../config/firebase';
+
+// Conditionally import popup methods for web only
+let GoogleAuthProvider: any;
+let signInWithPopup: any;
+if (Platform.OS === 'web') {
+  const auth = require('firebase/auth');
+  GoogleAuthProvider = auth.GoogleAuthProvider;
+  signInWithPopup = auth.signInWithPopup;
+}
 
 interface AuthContextType {
   user: User | null;
