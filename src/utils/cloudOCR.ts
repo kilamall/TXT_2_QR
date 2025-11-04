@@ -8,20 +8,25 @@ const OCR_API_KEY = 'K87899142388957'; // Free public demo key - replace with yo
 const OCR_API_URL = 'https://api.ocr.space/parse/image';
 
 export const extractTextFromImage = async (
-  imageUri: string,
+  base64Image: string,
   onProgress?: (message: string) => void
 ): Promise<string> => {
   try {
     onProgress?.('Uploading image...');
 
+    // Ensure base64 string is properly formatted
+    const base64Data = base64Image.startsWith('data:') 
+      ? base64Image 
+      : `data:image/jpeg;base64,${base64Image}`;
+
     const formData = new FormData();
-    formData.append('base64Image', `data:image/jpeg;base64,${imageUri}`);
+    formData.append('base64Image', base64Data);
     formData.append('apikey', OCR_API_KEY);
     formData.append('language', 'eng');
     formData.append('isOverlayRequired', 'false');
     formData.append('detectOrientation', 'true');
     formData.append('scale', 'true');
-    formData.append('OCREngine', '2'); // Use OCR Engine 2 (better accuracy)
+    formData.append('OCREngine', '2');
 
     onProgress?.('Processing with OCR...');
 
