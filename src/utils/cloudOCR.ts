@@ -4,8 +4,11 @@
  * Get API key from: https://ocr.space/ocrapi
  */
 
-const OCR_API_KEY = 'K87899142388957'; // Free public demo key - replace with your own!
+const OCR_API_KEY = 'K87899142388957'; // Free public demo key
 const OCR_API_URL = 'https://api.ocr.space/parse/image';
+
+// IMPORTANT: The demo key works but is rate-limited
+// For production, get your own free key from: https://ocr.space/ocrapi
 
 export const extractTextFromImage = async (
   base64Image: string,
