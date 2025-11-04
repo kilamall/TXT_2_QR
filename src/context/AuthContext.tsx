@@ -1,22 +1,28 @@
 import React, {createContext, useContext, useState, useEffect} from 'react';
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  User,
-} from 'firebase/auth';
 import {Alert, Platform} from 'react-native';
-import app from '../config/firebase';
 
-// Conditionally import popup methods for web only
-let GoogleAuthProvider: any;
-let signInWithPopup: any;
+// Conditionally import Firebase auth for web only
+let getAuth: any,
+  signInWithEmailAndPassword: any,
+  createUserWithEmailAndPassword: any,
+  signOut: any,
+  onAuthStateChanged: any,
+  GoogleAuthProvider: any,
+  signInWithPopup: any,
+  User: any,
+  app: any;
+
 if (Platform.OS === 'web') {
   const auth = require('firebase/auth');
+  getAuth = auth.getAuth;
+  signInWithEmailAndPassword = auth.signInWithEmailAndPassword;
+  createUserWithEmailAndPassword = auth.createUserWithEmailAndPassword;
+  signOut = auth.signOut;
+  onAuthStateChanged = auth.onAuthStateChanged;
   GoogleAuthProvider = auth.GoogleAuthProvider;
   signInWithPopup = auth.signInWithPopup;
+  User = auth.User;
+  app = require('../config/firebase').default;
 }
 
 interface AuthContextType {
