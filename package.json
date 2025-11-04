@@ -21,6 +21,7 @@
     "expo-ads-admob": "^13.0.0",
     "expo-barcode-scanner": "^13.0.1",
     "expo-camera": "~17.0.8",
+    "expo-dev-client": "~6.0.16",
     "expo-document-picker": "~14.0.7",
     "expo-file-system": "~19.0.17",
     "expo-image-manipulator": "~14.0.7",

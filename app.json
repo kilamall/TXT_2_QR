@@ -15,18 +15,23 @@
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs camera access to scan text from images using OCR",
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select images for text scanning",
-        "NSPhotoLibraryAddUsageDescription": "This app needs permission to save QR codes to your photo library"
+        "NSPhotoLibraryAddUsageDescription": "This app needs permission to save QR codes to your photo library",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "buildNumber": "1"
     },
     "android": {
       "package": "com.txt2qr.app",
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES"
       ],
-      "versionCode": 1
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#007AFF"
+      }
     },
     "plugins": [
       [
@@ -60,8 +65,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "YOUR_PROJECT_ID_HERE"
+        "projectId": "dca8154e-153d-455f-8d4f-ad584120cbc8"
       }
-    }
+    },
+    "owner": "kilamall"
   }
 }
