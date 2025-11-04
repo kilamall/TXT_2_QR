@@ -5,13 +5,15 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
+  TextInput,
+  Image,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {CameraView, useCameraPermissions} from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import {recognizeTextWithProgress} from '../utils/ocrService';
 
 interface CameraScannerProps {
   onTextDetected: (text: string) => void;
@@ -26,60 +28,16 @@ const CameraScanner: React.FC<CameraScannerProps> = ({
 }) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [showCamera, setShowCamera] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [ocrProgress, setOcrProgress] = useState(0);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [extractedText, setExtractedText] = useState('');
   const cameraRef = useRef<any>(null);
-
-  const processImage = async (imageUri: string) => {
-    setIsProcessing(true);
-    setOcrProgress(0);
-
-    try {
-      const text = await recognizeTextWithProgress(imageUri, (progress) => {
-        setOcrProgress(Math.round(progress * 100));
-      });
-
-      if (text && text.trim().length > 0) {
-        Alert.alert(
-          'Text Detected!',
-          `Found: ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`,
-          [
-            {
-              text: 'Use This Text',
-              onPress: () => {
-                onTextDetected(text);
-                setIsProcessing(false);
-              },
-            },
-            {
-              text: 'Try Again',
-              onPress: () => setIsProcessing(false),
-              style: 'cancel',
-            },
-          ]
-        );
-      } else {
-        Alert.alert(
-          'No Text Found',
-          'Could not detect any text in the image. Try again with better lighting or clearer text.',
-          [{text: 'OK', onPress: () => setIsProcessing(false)}]
-        );
-      }
-    } catch (error) {
-      Alert.alert(
-        'OCR Error',
-        'Failed to process image. Please try again.',
-        [{text: 'OK', onPress: () => setIsProcessing(false)}]
-      );
-    }
-  };
 
   const handleTakePicture = async () => {
     if (cameraRef.current) {
       try {
         const photo = await cameraRef.current.takePictureAsync();
         setShowCamera(false);
-        await processImage(photo.uri);
+        setCapturedImage(photo.uri);
       } catch (error) {
         Alert.alert('Error', 'Failed to take picture');
       }
@@ -93,12 +51,23 @@ const CameraScanner: React.FC<CameraScannerProps> = ({
     });
 
     if (!result.canceled && result.assets[0]) {
-      await processImage(result.assets[0].uri);
+      setCapturedImage(result.assets[0].uri);
     }
   };
 
-  const handleManualInput = () => {
-    onClose();
+  const handleSubmitText = () => {
+    if (extractedText.trim()) {
+      onTextDetected(extractedText.trim());
+      setCapturedImage(null);
+      setExtractedText('');
+    } else {
+      Alert.alert('Error', 'Please enter the text from the image');
+    }
+  };
+
+  const handleRetake = () => {
+    setCapturedImage(null);
+    setExtractedText('');
   };
 
   if (!permission) {
@@ -119,15 +88,15 @@ const CameraScanner: React.FC<CameraScannerProps> = ({
             <Ionicons name="camera-outline" size={80} color="#007AFF" />
             <Text style={styles.title}>Camera Permission Required</Text>
             <Text style={styles.subtitle}>
-              We need camera access to scan text from images using OCR
+              We need camera access to capture text from images
             </Text>
             
             <TouchableOpacity style={styles.button} onPress={requestPermission}>
               <Text style={styles.buttonText}>Grant Permission</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleManualInput}>
-              <Text style={styles.secondaryButtonText}>Or Enter Text Manually</Text>
+            <TouchableOpacity style={styles.secondaryButton} onPress={onClose}>
+              <Text style={styles.secondaryButtonText}>Go Back</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -135,46 +104,74 @@ const CameraScanner: React.FC<CameraScannerProps> = ({
     );
   }
 
-  // Processing screen
-  if (isProcessing) {
+  // Text extraction view
+  if (capturedImage) {
     return (
-      <View style={styles.container}>
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.overlay}>
           <View style={styles.header}>
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <Ionicons name="close" size={30} color="#000" />
+            <TouchableOpacity style={styles.closeButton} onPress={handleRetake}>
+              <Ionicons name="arrow-back" size={30} color="#000" />
             </TouchableOpacity>
+            <Text style={styles.headerTitle}>Extract Text</Text>
+            <View style={{width: 44}} />
           </View>
 
-          <View style={styles.content}>
-            <ActivityIndicator size="large" color="#007AFF" />
-            <Text style={styles.title}>Processing Image...</Text>
-            <Text style={styles.subtitle}>
-              Using OCR to extract text
-            </Text>
-            
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBar}>
-                <View 
-                  style={[
-                    styles.progressFill, 
-                    {width: `${ocrProgress}%`}
-                  ]} 
-                />
-              </View>
-              <Text style={styles.progressText}>{ocrProgress}%</Text>
+          <View style={styles.extractContent}>
+            {/* Image Preview */}
+            <View style={styles.imageContainer}>
+              <Image source={{uri: capturedImage}} style={styles.image} />
             </View>
 
-            <Text style={styles.processingTip}>
-              This may take 10-30 seconds...
-            </Text>
+            {/* Text Input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>
+                📝 Type the text you see in the image:
+              </Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Enter text from image..."
+                value={extractedText}
+                onChangeText={setExtractedText}
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+                autoFocus
+              />
+              
+              <Text style={styles.hint}>
+                💡 Tip: Type carefully - this will be used to generate your QR code
+              </Text>
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.actionButtons}>
+              <TouchableOpacity 
+                style={[styles.button, !extractedText.trim() && styles.buttonDisabled]}
+                onPress={handleSubmitText}
+                disabled={!extractedText.trim()}>
+                <Ionicons name="checkmark-circle" size={24} color="#fff" />
+                <Text style={styles.buttonText}>Generate QR Code</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.button, styles.secondaryButton]}
+                onPress={handleRetake}>
+                <Ionicons name="camera" size={24} color="#007AFF" />
+                <Text style={[styles.buttonText, styles.secondaryButtonText]}>
+                  Take Another Photo
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     );
   }
 
-  // Menu screen (choose camera or gallery)
+  // Menu screen
   if (!showCamera) {
     return (
       <View style={styles.container}>
@@ -187,9 +184,9 @@ const CameraScanner: React.FC<CameraScannerProps> = ({
 
           <View style={styles.content}>
             <Ionicons name="scan" size={80} color="#007AFF" />
-            <Text style={styles.title}>Scan Text with OCR</Text>
+            <Text style={styles.title}>Scan Text from Image</Text>
             <Text style={styles.subtitle}>
-              Choose how you'd like to capture text
+              Capture or select an image with text
             </Text>
             
             <TouchableOpacity 
@@ -203,20 +200,24 @@ const CameraScanner: React.FC<CameraScannerProps> = ({
               style={[styles.button, styles.secondaryButton]} 
               onPress={handlePickImage}>
               <Ionicons name="images" size={24} color="#007AFF" />
-              <Text style={[styles.buttonText, styles.secondaryButtonText]}>Choose from Gallery</Text>
+              <Text style={[styles.buttonText, styles.secondaryButtonText]}>
+                Choose from Gallery
+              </Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={[styles.button, styles.tertiaryButton]} 
-              onPress={handleManualInput}>
+              onPress={onClose}>
               <Ionicons name="create" size={24} color="#8E8E93" />
-              <Text style={[styles.buttonText, styles.tertiaryButtonText]}>Enter Manually Instead</Text>
+              <Text style={[styles.buttonText, styles.tertiaryButtonText]}>
+                Type Manually Instead
+              </Text>
             </TouchableOpacity>
 
             <View style={styles.tipBox}>
-              <Ionicons name="information-circle" size={20} color="#007AFF" />
+              <Ionicons name="bulb" size={20} color="#FF9500" />
               <Text style={styles.tipText}>
-                Works best with clear, well-lit images of printed text
+                Works great with signs, documents, business cards, receipts, etc.
               </Text>
             </View>
           </View>
@@ -277,15 +278,22 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 20,
     paddingTop: 50,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
   },
   closeButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -294,6 +302,56 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
+  },
+  extractContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  imageContainer: {
+    marginTop: 20,
+    marginBottom: 20,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  image: {
+    width: '100%',
+    height: 200,
+    resizeMode: 'contain',
+    backgroundColor: '#fff',
+  },
+  inputContainer: {
+    flex: 1,
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 10,
+  },
+  textInput: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 15,
+    fontSize: 16,
+    minHeight: 150,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  hint: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginTop: 10,
+    fontStyle: 'italic',
+  },
+  actionButtons: {
+    gap: 10,
+    paddingBottom: 20,
   },
   title: {
     fontSize: 24,
@@ -321,6 +379,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  buttonDisabled: {
+    backgroundColor: '#C7C7CC',
+  },
   buttonText: {
     color: '#fff',
     fontSize: 16,
@@ -345,47 +406,20 @@ const styles = StyleSheet.create({
   },
   tipBox: {
     flexDirection: 'row',
-    backgroundColor: '#E5F1FF',
+    backgroundColor: '#FFF9E6',
     padding: 12,
     borderRadius: 8,
     marginTop: 20,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FFE5B4',
   },
   tipText: {
     flex: 1,
     marginLeft: 10,
     fontSize: 13,
-    color: '#007AFF',
+    color: '#856404',
     lineHeight: 18,
-  },
-  progressContainer: {
-    width: '100%',
-    marginTop: 30,
-    alignItems: 'center',
-  },
-  progressBar: {
-    width: '100%',
-    height: 8,
-    backgroundColor: '#E5E5EA',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#007AFF',
-    borderRadius: 4,
-  },
-  progressText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginTop: 10,
-  },
-  processingTip: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginTop: 15,
-    textAlign: 'center',
   },
   scanFrame: {
     width: width * 0.8,
