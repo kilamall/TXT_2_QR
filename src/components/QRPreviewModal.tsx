@@ -47,7 +47,7 @@ const QRPreviewModal: React.FC<QRPreviewModalProps> = ({
             await FileSystem.writeAsStringAsync(
               fileUri,
               dataURL.replace('data:image/png;base64,', ''),
-              { encoding: FileSystem.Encoding.Base64 }
+              { encoding: 'base64' }
             );
             const isAvailable = await Sharing.isAvailableAsync();
             if (isAvailable) {
