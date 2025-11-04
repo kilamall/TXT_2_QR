@@ -7,11 +7,13 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import {formatQRText} from '../utils/qrDetector';
+import {uploadFileToCloud, formatFileSize} from '../utils/fileUploadService';
 
 interface ManualInputProps {
   onSubmit: (text: string) => void;
@@ -22,6 +24,8 @@ type InputType = 'text' | 'url' | 'email' | 'phone' | 'sms';
 const ManualInput: React.FC<ManualInputProps> = ({onSubmit}) => {
   const [text, setText] = useState('');
   const [inputType, setInputType] = useState<InputType>('text');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleSubmit = () => {
     if (!text.trim()) {
@@ -49,13 +53,66 @@ const ManualInput: React.FC<ManualInputProps> = ({onSubmit}) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: '*/*',
+        copyToCacheDirectory: true,
       });
 
-      if (!result.canceled) {
-        Alert.alert('Document Selected', `Selected: ${result.assets[0].name}`);
+      if (!result.canceled && result.assets[0]) {
+        const file = result.assets[0];
+        
+        Alert.alert(
+          'Upload File to Cloud?',
+          `File: ${file.name}\nSize: ${formatFileSize(file.size || 0)}\n\nThis will upload to cloud storage and create a QR code with the download link.`,
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+            {
+              text: 'Upload & Create QR',
+              onPress: () => uploadAndCreateQR(file.uri, file.name),
+            },
+          ]
+        );
       }
     } catch (error) {
       console.error('Document picker error:', error);
+    }
+  };
+
+  const uploadAndCreateQR = async (fileUri: string, fileName: string) => {
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const result = await uploadFileToCloud(fileUri, fileName, (progress) => {
+        setUploadProgress(Math.round(progress));
+      });
+
+      setIsUploading(false);
+      setUploadProgress(0);
+
+      // Create QR code with the download URL
+      Alert.alert(
+        '✅ Upload Complete!',
+        `File uploaded successfully!\n\nCreating QR code with download link...`,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Submit the download URL as the QR code content
+              onSubmit(result.downloadURL);
+            },
+          },
+        ]
+      );
+    } catch (error: any) {
+      setIsUploading(false);
+      setUploadProgress(0);
+      Alert.alert(
+        'Upload Failed',
+        error.message || 'Could not upload file. Please check your Firebase configuration.',
+        [{text: 'OK'}]
+      );
     }
   };
 
@@ -138,13 +195,27 @@ const ManualInput: React.FC<ManualInputProps> = ({onSubmit}) => {
         </TouchableOpacity>
       </View>
 
+      {/* Upload Progress */}
+      {isUploading && (
+        <View style={styles.uploadingContainer}>
+          <ActivityIndicator size="small" color="#007AFF" />
+          <Text style={styles.uploadingText}>Uploading file...</Text>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, {width: `${uploadProgress}%`}]} />
+          </View>
+          <Text style={styles.progressText}>{uploadProgress}%</Text>
+        </View>
+      )}
+
       {/* Generate Button */}
       <TouchableOpacity
-        style={[styles.generateButton, !text.trim() && styles.buttonDisabled]}
+        style={[styles.generateButton, (!text.trim() || isUploading) && styles.buttonDisabled]}
         onPress={handleSubmit}
-        disabled={!text.trim()}>
+        disabled={!text.trim() || isUploading}>
         <Ionicons name="qr-code" size={24} color="#fff" />
-        <Text style={styles.generateButtonText}>Generate QR Code</Text>
+        <Text style={styles.generateButtonText}>
+          {isUploading ? 'Uploading...' : 'Generate QR Code'}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -238,6 +309,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 10,
+  },
+  uploadingContainer: {
+    backgroundColor: '#F9F9F9',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 15,
+    alignItems: 'center',
+  },
+  uploadingText: {
+    marginTop: 10,
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  progressBar: {
+    width: '100%',
+    height: 6,
+    backgroundColor: '#E5E5EA',
+    borderRadius: 3,
+    marginTop: 10,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#007AFF',
+    borderRadius: 3,
+  },
+  progressText: {
+    marginTop: 5,
+    fontSize: 12,
+    color: '#8E8E93',
   },
 });
 
