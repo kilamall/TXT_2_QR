@@ -16,7 +16,7 @@ try {
   const barcodeScannerModule = require('expo-barcode-scanner');
   BarCodeScanner = barcodeScannerModule.BarCodeScanner;
 } catch (error) {
-  console.log('BarCodeScanner not available in this environment');
+  // Silent - scanner not available in this environment
 }
 
 interface QRScannerProps {

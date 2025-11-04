@@ -48,16 +48,22 @@ const CameraScanner: React.FC<CameraScannerProps> = ({
         base64 = await FileSystem.readAsStringAsync(imageUri, {
           encoding: 'base64',
         });
+        
+        if (!base64) {
+          throw new Error('Image conversion failed - no data');
+        }
+
+        setOcrStatus('Image converted, uploading...');
       } catch (error) {
         console.error('Failed to read image:', error);
-        throw new Error('Failed to read image file');
-      }
-
-      if (!base64) {
-        throw new Error('Image conversion failed');
+        // Fall back to manual entry
+        setIsProcessing(false);
+        setUseManualEntry(true);
+        return;
       }
 
       // Extract text using cloud OCR
+      setOcrStatus('Analyzing image with AI...');
       const text = await extractTextFromImage(base64, (status) => {
         setOcrStatus(status);
       });
