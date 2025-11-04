@@ -12,6 +12,7 @@ import {
 import {Ionicons} from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import {formatQRText} from '../utils/qrDetector';
 import {uploadFileToCloud, formatFileSize} from '../utils/fileUploadService';
 
@@ -39,13 +40,76 @@ const ManualInput: React.FC<ManualInputProps> = ({onSubmit}) => {
   };
 
   const handleImagePick = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 1,
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 1,
+      });
 
-    if (!result.canceled) {
-      Alert.alert('Image Selected', 'For now, please type the text manually. Full OCR coming in next update!');
+      if (!result.canceled && result.assets[0]) {
+        // Start OCR processing
+        setIsUploading(true);
+        setUploadProgress(0);
+
+        try {
+          const imageUri = result.assets[0].uri;
+          
+          // Convert to base64
+          const base64 = await FileSystem.readAsStringAsync(imageUri, {
+            encoding: 'base64',
+          });
+
+          setUploadProgress(40);
+
+          // Import OCR function
+          const {extractTextFromImage} = require('../utils/cloudOCR');
+          
+          // Extract text
+          const extractedText = await extractTextFromImage(base64, (status) => {
+            console.log('OCR:', status);
+            setUploadProgress(70);
+          });
+
+          setUploadProgress(100);
+          setIsUploading(false);
+
+          if (extractedText && extractedText.trim()) {
+            Alert.alert(
+              '✅ Text Extracted!',
+              `Found: ${extractedText.substring(0, 200)}${extractedText.length > 200 ? '...' : ''}`,
+              [
+                {
+                  text: 'Use This Text',
+                  onPress: () => {
+                    setText(extractedText);
+                    setUploadProgress(0);
+                  },
+                },
+                {
+                  text: 'Cancel',
+                  style: 'cancel',
+                  onPress: () => setUploadProgress(0),
+                },
+              ]
+            );
+          } else {
+            setUploadProgress(0);
+            Alert.alert('No Text Found', 'Could not detect text in the image. Please try another image or type manually.');
+          }
+        } catch (error: any) {
+          setIsUploading(false);
+          setUploadProgress(0);
+          Alert.alert(
+            'OCR Error',
+            'Could not extract text. Please type manually.',
+            [{text: 'OK'}]
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Image picker error:', error);
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
