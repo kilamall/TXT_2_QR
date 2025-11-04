@@ -13,6 +13,7 @@ import {Ionicons} from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as ImageManipulator from 'expo-image-manipulator';
 import {formatQRText} from '../utils/qrDetector';
 import {uploadFileToCloud, formatFileSize} from '../utils/fileUploadService';
 
@@ -54,12 +55,42 @@ const ManualInput: React.FC<ManualInputProps> = ({onSubmit}) => {
         try {
           const imageUri = result.assets[0].uri;
           
+          // Compress image to under 1MB
+          setUploadProgress(20);
+          const manipulatedImage = await ImageManipulator.manipulateAsync(
+            imageUri,
+            [
+              {resize: {width: 1200}}, // Max 1200px width
+            ],
+            {
+              compress: 0.7, // 70% quality
+              format: ImageManipulator.SaveFormat.JPEG,
+            }
+          );
+
+          setUploadProgress(30);
+          
           // Convert to base64
-          const base64 = await FileSystem.readAsStringAsync(imageUri, {
+          const base64 = await FileSystem.readAsStringAsync(manipulatedImage.uri, {
             encoding: 'base64',
           });
 
-          setUploadProgress(40);
+          // Check if still too large
+          const sizeKB = (base64.length * 0.75) / 1024;
+          if (sizeKB > 1000) {
+            // Compress more
+            const smallerImage = await ImageManipulator.manipulateAsync(
+              imageUri,
+              [{resize: {width: 800}}],
+              {compress: 0.5, format: ImageManipulator.SaveFormat.JPEG}
+            );
+            const base64Small = await FileSystem.readAsStringAsync(smallerImage.uri, {
+              encoding: 'base64',
+            });
+            setUploadProgress(40);
+          }
+
+          setUploadProgress(50);
 
           // Import OCR function
           const {extractTextFromImage} = require('../utils/cloudOCR');

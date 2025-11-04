@@ -16,6 +16,7 @@ import {Ionicons} from '@expo/vector-icons';
 import {CameraView, useCameraPermissions} from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as ImageManipulator from 'expo-image-manipulator';
 import {extractTextFromImage} from '../utils/cloudOCR';
 
 interface CameraScannerProps {
@@ -40,13 +41,26 @@ const CameraScanner: React.FC<CameraScannerProps> = ({
 
   const processWithOCR = async (imageUri: string) => {
     setIsProcessing(true);
-    setOcrStatus('Converting image...');
+    setOcrStatus('Preparing image...');
 
     try {
-      // Convert image to base64
+      // Compress and resize image to under 1MB
+      setOcrStatus('Compressing image...');
+      const manipulatedImage = await ImageManipulator.manipulateAsync(
+        imageUri,
+        [
+          {resize: {width: 1200}}, // Resize to max 1200px width
+        ],
+        {
+          compress: 0.7, // 70% quality
+          format: ImageManipulator.SaveFormat.JPEG,
+        }
+      );
+
+      // Convert compressed image to base64
       let base64;
       try {
-        base64 = await FileSystem.readAsStringAsync(imageUri, {
+        base64 = await FileSystem.readAsStringAsync(manipulatedImage.uri, {
           encoding: 'base64',
         });
         
@@ -54,9 +68,32 @@ const CameraScanner: React.FC<CameraScannerProps> = ({
           throw new Error('Image conversion failed - no data');
         }
 
-        setOcrStatus('Image converted, uploading...');
+        // Check size (approximate)
+        const sizeKB = (base64.length * 0.75) / 1024;
+        console.log(`Image size: ${Math.round(sizeKB)} KB`);
+
+        if (sizeKB > 1000) {
+          // Try again with more compression
+          setOcrStatus('Image too large, compressing more...');
+          const smallerImage = await ImageManipulator.manipulateAsync(
+            imageUri,
+            [
+              {resize: {width: 800}}, // Even smaller
+            ],
+            {
+              compress: 0.5, // 50% quality
+              format: ImageManipulator.SaveFormat.JPEG,
+            }
+          );
+          
+          base64 = await FileSystem.readAsStringAsync(smallerImage.uri, {
+            encoding: 'base64',
+          });
+        }
+
+        setOcrStatus('Image prepared, uploading...');
       } catch (error) {
-        console.error('Failed to read image:', error);
+        console.error('Failed to process image:', error);
         // Fall back to manual entry
         setIsProcessing(false);
         setUseManualEntry(true);
