@@ -47,21 +47,7 @@
           "savePhotosPermission": "Allow TXT 2 QR to save QR codes to your photo library"
         }
       ],
-      "expo-barcode-scanner",
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
-          "userTrackingPermission": "This identifier will be used to deliver personalized ads to you."
-        }
-      ],
-      [
-        "react-native-iap",
-        {
-          "enablePromotionalPurchases": true
-        }
-      ]
+      "expo-barcode-scanner"
     ],
     "extra": {
       "eas": {
