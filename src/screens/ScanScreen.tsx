@@ -70,9 +70,13 @@ const ScanScreen = () => {
           style={styles.scanButton}
           onPress={handleScanPress}>
           <Ionicons name="qr-code-outline" size={80} color="#fff" />
-          <Text style={styles.scanButtonText}>Start Scanning</Text>
+          <Text style={styles.scanButtonText}>
+            {Platform.OS === 'web' ? 'Scanner (Mobile Only)' : 'Start Scanning'}
+          </Text>
           <Text style={styles.scanButtonSubtext}>
-            Tap to open QR code scanner
+            {Platform.OS === 'web' 
+              ? 'QR scanning requires a camera - use mobile app'
+              : 'Tap to open QR code scanner'}
           </Text>
         </TouchableOpacity>
 

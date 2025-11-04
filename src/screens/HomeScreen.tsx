@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
+  Platform,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Ionicons} from '@expo/vector-icons';
@@ -58,16 +59,18 @@ const HomeScreen = () => {
           </Text>
         </View>
 
-        {/* Camera Scan Button */}
-        <TouchableOpacity
-          style={styles.cameraButton}
-          onPress={() => setShowCamera(true)}>
-          <Ionicons name="camera" size={40} color="#fff" />
-          <Text style={styles.cameraButtonText}>Scan Text with Camera</Text>
-          <Text style={styles.cameraButtonSubtext}>
-            Use OCR to extract text from images
-          </Text>
-        </TouchableOpacity>
+        {/* Camera Scan Button - Hide on web */}
+        {Platform.OS !== 'web' && (
+          <TouchableOpacity
+            style={styles.cameraButton}
+            onPress={() => setShowCamera(true)}>
+            <Ionicons name="camera" size={40} color="#fff" />
+            <Text style={styles.cameraButtonText}>Scan Text with Camera</Text>
+            <Text style={styles.cameraButtonSubtext}>
+              Use OCR to extract text from images
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Manual Input */}
         <ManualInput onSubmit={handleManualSubmit} />
