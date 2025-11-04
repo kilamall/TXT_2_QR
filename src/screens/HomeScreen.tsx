@@ -14,6 +14,7 @@ import CameraScanner from '../components/CameraScanner';
 import ManualInput from '../components/ManualInput';
 import QRPreviewModal from '../components/QRPreviewModal';
 import AdBanner from '../components/AdBanner';
+import WebAds from '../components/WebAds';
 import {useQR} from '../context/QRContext';
 import {detectQRType, generateId} from '../utils/qrDetector';
 
@@ -105,8 +106,12 @@ const HomeScreen = () => {
           </View>
         </View>
 
-        {/* Ad Banner */}
-        <AdBanner style={styles.adBanner} />
+        {/* Ads - AdMob for mobile, AdSense for web */}
+        {Platform.OS === 'web' ? (
+          <WebAds style={styles.adBanner} />
+        ) : (
+          <AdBanner style={styles.adBanner} />
+        )}
       </ScrollView>
 
       {/* Camera Scanner Modal */}

@@ -13,6 +13,8 @@ import {useQR} from '../context/QRContext';
 import {format} from 'date-fns';
 import QRPreviewModal from '../components/QRPreviewModal';
 import AdBanner from '../components/AdBanner';
+import WebAds from '../components/WebAds';
+import {Platform} from 'react-native';
 
 const HistoryScreen = () => {
   const {qrCodes, deleteQRCode, clearHistory} = useQR();
@@ -142,8 +144,8 @@ const HistoryScreen = () => {
             ItemSeparatorComponent={() => <View style={styles.separator} />}
           />
           
-          {/* Ad Banner */}
-          <AdBanner />
+          {/* Ads */}
+          {Platform.OS === 'web' ? <WebAds /> : <AdBanner />}
         </>
       )}
 

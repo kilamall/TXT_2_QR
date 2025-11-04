@@ -25,13 +25,15 @@ function AppContent() {
 
   return (
     <SafeAreaProvider>
-      <PremiumProvider>
-        <QRProvider>
-          <NavigationContainer>
-            <MainNavigator />
-          </NavigationContainer>
-        </QRProvider>
-      </PremiumProvider>
+      <AuthProvider>
+        <PremiumProvider>
+          <QRProvider>
+            <NavigationContainer>
+              <MainNavigator />
+            </NavigationContainer>
+          </QRProvider>
+        </PremiumProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

@@ -12,12 +12,15 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Ionicons} from '@expo/vector-icons';
 import AdBanner from '../components/AdBanner';
+import WebAds from '../components/WebAds';
 import {usePremium} from '../context/PremiumContext';
+import {useAuth} from '../context/AuthContext';
 
 const SettingsScreen = () => {
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [autoSaveEnabled, setAutoSaveEnabled] = React.useState(false);
   const {isPremium, purchasePremium, restorePurchases, isLoading} = usePremium();
+  const {user, logout} = useAuth();
 
   const openURL = (url: string) => {
     Linking.openURL(url).catch(err =>
@@ -92,6 +95,45 @@ const SettingsScreen = () => {
                 <Ionicons name="star" size={16} color="#FFD700" />
                 <Text style={styles.premiumText}>Premium</Text>
               </View>
+            )}
+            {user && (
+              <Text style={styles.userEmail}>
+                Signed in as: {user.email}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* Account Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>ACCOUNT</Text>
+          
+          <View style={styles.sectionContent}>
+            {user ? (
+              <>
+                <SettingItem
+                  icon="person-circle"
+                  title="Account"
+                  subtitle={user.email || 'Signed in'}
+                  onPress={() => {}}
+                  showArrow={false}
+                />
+                <View style={styles.divider} />
+                <SettingItem
+                  icon="log-out"
+                  title="Sign Out"
+                  onPress={logout}
+                />
+              </>
+            ) : (
+              <SettingItem
+                icon="log-in"
+                title="Sign In"
+                subtitle="Sync your data across devices"
+                onPress={() => {
+                  Alert.alert('Coming Soon', 'Sign in feature will be available in the next update!');
+                }}
+              />
             )}
           </View>
         </View>
@@ -230,8 +272,14 @@ const SettingsScreen = () => {
         </View>
 
 
-        {/* Ad Banner */}
-        {!isPremium && <AdBanner style={styles.adBanner} />}
+        {/* Ads - AdSense for web, AdMob for mobile */}
+        {!isPremium && (
+          Platform.OS === 'web' ? (
+            <WebAds style={styles.adBanner} />
+          ) : (
+            <AdBanner style={styles.adBanner} />
+          )
+        )}
 
         {/* Footer */}
         <View style={styles.footer}>
@@ -296,6 +344,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#8E8E93',
     marginTop: 5,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: '#007AFF',
+    marginTop: 8,
   },
   settingItem: {
     flexDirection: 'row',
