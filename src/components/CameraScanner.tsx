@@ -46,7 +46,7 @@ const CameraScanner: React.FC<CameraScannerProps> = ({
       let base64;
       try {
         base64 = await FileSystem.readAsStringAsync(imageUri, {
-          encoding: FileSystem.EncodingType.Base64,
+          encoding: 'base64',
         });
       } catch (error) {
         console.error('Failed to read image:', error);
