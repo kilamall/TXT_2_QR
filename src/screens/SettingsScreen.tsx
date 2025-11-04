@@ -11,10 +11,13 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Ionicons} from '@expo/vector-icons';
+import AdBanner from '../components/AdBanner';
+import {usePremium} from '../context/PremiumContext';
 
 const SettingsScreen = () => {
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [autoSaveEnabled, setAutoSaveEnabled] = React.useState(false);
+  const {isPremium, purchasePremium, restorePurchases, isLoading} = usePremium();
 
   const openURL = (url: string) => {
     Linking.openURL(url).catch(err =>
@@ -84,8 +87,41 @@ const SettingsScreen = () => {
             <Ionicons name="qr-code" size={60} color="#007AFF" />
             <Text style={styles.appName}>TXT 2 QR</Text>
             <Text style={styles.appVersion}>Version 1.0.0</Text>
+            {isPremium && (
+              <View style={styles.premiumBadge}>
+                <Ionicons name="star" size={16} color="#FFD700" />
+                <Text style={styles.premiumText}>Premium</Text>
+              </View>
+            )}
           </View>
         </View>
+
+        {/* Premium Section */}
+        {!isPremium && (
+          <View style={styles.section}>
+            <View style={styles.premiumCard}>
+              <Ionicons name="sparkles" size={40} color="#FFD700" />
+              <Text style={styles.premiumCardTitle}>Go Premium!</Text>
+              <Text style={styles.premiumCardText}>
+                Remove all ads and support development
+              </Text>
+              <Text style={styles.premiumPrice}>$3.99 one-time</Text>
+              <TouchableOpacity 
+                style={styles.premiumButton}
+                onPress={purchasePremium}
+                disabled={isLoading}>
+                <Text style={styles.premiumButtonText}>
+                  {isLoading ? 'Processing...' : 'Remove Ads Forever'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.restoreButton}
+                onPress={restorePurchases}>
+                <Text style={styles.restoreButtonText}>Restore Purchase</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Preferences */}
         <View style={styles.section}>
@@ -193,6 +229,9 @@ const SettingsScreen = () => {
           </View>
         </View>
 
+
+        {/* Ad Banner */}
+        {!isPremium && <AdBanner style={styles.adBanner} />}
 
         {/* Footer */}
         <View style={styles.footer}>
@@ -309,6 +348,77 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8E8E93',
     marginTop: 5,
+  },
+  premiumCard: {
+    backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    backgroundColor: '#007AFF',
+    margin: 15,
+    padding: 30,
+    borderRadius: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  premiumCardTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginTop: 15,
+  },
+  premiumCardText: {
+    fontSize: 16,
+    color: '#E5F1FF',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  premiumPrice: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#FFD700',
+    marginTop: 20,
+  },
+  premiumButton: {
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 40,
+    paddingVertical: 15,
+    borderRadius: 25,
+    marginTop: 20,
+    width: '100%',
+    alignItems: 'center',
+  },
+  premiumButtonText: {
+    color: '#000',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  restoreButton: {
+    marginTop: 15,
+    paddingVertical: 10,
+  },
+  restoreButtonText: {
+    color: '#E5F1FF',
+    fontSize: 14,
+  },
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 10,
+  },
+  premiumText: {
+    marginLeft: 5,
+    color: '#000',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  adBanner: {
+    marginTop: 20,
   },
 });
 

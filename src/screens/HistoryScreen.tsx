@@ -12,6 +12,7 @@ import {Ionicons} from '@expo/vector-icons';
 import {useQR} from '../context/QRContext';
 import {format} from 'date-fns';
 import QRPreviewModal from '../components/QRPreviewModal';
+import AdBanner from '../components/AdBanner';
 
 const HistoryScreen = () => {
   const {qrCodes, deleteQRCode, clearHistory} = useQR();
@@ -140,6 +141,9 @@ const HistoryScreen = () => {
             contentContainerStyle={styles.listContent}
             ItemSeparatorComponent={() => <View style={styles.separator} />}
           />
+          
+          {/* Ad Banner */}
+          <AdBanner />
         </>
       )}
 

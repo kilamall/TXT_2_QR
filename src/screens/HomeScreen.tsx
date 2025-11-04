@@ -13,6 +13,7 @@ import {Ionicons} from '@expo/vector-icons';
 import CameraScanner from '../components/CameraScanner';
 import ManualInput from '../components/ManualInput';
 import QRPreviewModal from '../components/QRPreviewModal';
+import AdBanner from '../components/AdBanner';
 import {useQR} from '../context/QRContext';
 import {detectQRType, generateId} from '../utils/qrDetector';
 
@@ -104,6 +105,8 @@ const HomeScreen = () => {
           </View>
         </View>
 
+        {/* Ad Banner */}
+        <AdBanner style={styles.adBanner} />
       </ScrollView>
 
       {/* Camera Scanner Modal */}

@@ -5,13 +5,15 @@ import {
   BannerAdSize,
   TestIds,
 } from 'react-native-google-mobile-ads';
+import {usePremium} from '../context/PremiumContext';
 
-// Replace these with your actual AdMob IDs from Google AdMob Console
+// AdMob Test IDs - Replace with your real IDs for production
+// Get your IDs from: https://admob.google.com/
 const BANNER_AD_UNIT_ID = __DEV__
   ? TestIds.BANNER
   : Platform.select({
-      ios: 'ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyy',
-      android: 'ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyy',
+      ios: 'ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyy', // Replace with your iOS Banner ID
+      android: 'ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyy', // Replace with your Android Banner ID
     }) || TestIds.BANNER;
 
 interface AdBannerProps {
@@ -23,6 +25,13 @@ const AdBanner: React.FC<AdBannerProps> = ({
   size = BannerAdSize.ANCHORED_ADAPTIVE_BANNER,
   style,
 }) => {
+  const {isPremium} = usePremium();
+
+  // Don't show ads if user has premium
+  if (isPremium) {
+    return null;
+  }
+
   return (
     <View style={[styles.container, style]}>
       <BannerAd
