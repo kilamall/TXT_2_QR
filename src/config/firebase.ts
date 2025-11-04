@@ -1,5 +1,4 @@
-import { initializeApp } from 'firebase/app';
-import { getStorage } from 'firebase/storage';
+import { initializeApp, FirebaseApp } from 'firebase/app';
 
 // Firebase configuration
 // TODO: Replace with your Firebase project credentials
@@ -14,10 +13,19 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app: FirebaseApp = initializeApp(firebaseConfig);
 
-// Initialize Cloud Storage
-export const storage = getStorage(app);
+// Initialize Cloud Storage (lazy load for web compatibility)
+let storage: any;
+export const getFirebaseStorage = () => {
+  if (!storage) {
+    const { getStorage } = require('firebase/storage');
+    storage = getStorage(app);
+  }
+  return storage;
+};
+
+export { storage };
 
 export default app;
 

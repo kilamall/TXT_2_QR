@@ -1,6 +1,16 @@
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../config/firebase';
+import {Platform} from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
+
+// Conditionally import Firebase Storage for web only
+let ref: any, uploadBytes: any, getDownloadURL: any, storage: any;
+if (Platform.OS === 'web') {
+  const firebaseStorage = require('firebase/storage');
+  ref = firebaseStorage.ref;
+  uploadBytes = firebaseStorage.uploadBytes;
+  getDownloadURL = firebaseStorage.getDownloadURL;
+  const firebaseConfig = require('../config/firebase');
+  storage = firebaseConfig.storage;
+}
 
 export interface UploadResult {
   downloadURL: string;
@@ -11,12 +21,17 @@ export interface UploadResult {
 
 /**
  * Upload file to Firebase Storage and get shareable link
+ * Note: Only available on web platform
  */
 export const uploadFileToCloud = async (
   fileUri: string,
   fileName: string,
   onProgress?: (progress: number) => void
 ): Promise<UploadResult> => {
+  if (Platform.OS !== 'web') {
+    throw new Error('File upload to cloud is only available on web platform');
+  }
+
   try {
     onProgress?.(0);
 
