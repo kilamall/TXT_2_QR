@@ -1,32 +1,35 @@
-import React, {createContext, useContext, useState, useEffect} from 'react';
+import React, {createContext, useContext, useEffect, useMemo, useState} from 'react';
 import {Alert, Platform} from 'react-native';
 
-// Conditionally import Firebase auth for web only
-let getAuth: any,
-  signInWithEmailAndPassword: any,
-  createUserWithEmailAndPassword: any,
-  signOut: any,
-  onAuthStateChanged: any,
-  GoogleAuthProvider: any,
-  signInWithPopup: any,
-  User: any,
-  app: any;
+type FirebaseAuthModule = typeof import('firebase/auth');
+type FirebaseAuthInstance = import('firebase/auth').Auth;
+type FirebaseUser = import('firebase/auth').User;
 
-if (Platform.OS === 'web') {
-  const auth = require('firebase/auth');
-  getAuth = auth.getAuth;
-  signInWithEmailAndPassword = auth.signInWithEmailAndPassword;
-  createUserWithEmailAndPassword = auth.createUserWithEmailAndPassword;
-  signOut = auth.signOut;
-  onAuthStateChanged = auth.onAuthStateChanged;
-  GoogleAuthProvider = auth.GoogleAuthProvider;
-  signInWithPopup = auth.signInWithPopup;
-  User = auth.User;
-  app = require('../config/firebase').default;
-}
+let firebaseAuthModule: FirebaseAuthModule | null = null;
+let firebaseApp: import('firebase/app').FirebaseApp | null = null;
+
+const ensureFirebaseAuthModule = () => {
+  if (Platform.OS !== 'web') {
+    return null;
+  }
+
+  if (!firebaseAuthModule) {
+    firebaseAuthModule = require('firebase/auth');
+  }
+
+  if (!firebaseApp) {
+    const firebaseModule = require('../config/firebase');
+    firebaseApp =
+      (typeof firebaseModule.getFirebaseApp === 'function'
+        ? firebaseModule.getFirebaseApp()
+        : null) || firebaseModule.default || null;
+  }
+
+  return firebaseAuthModule;
+};
 
 interface AuthContextType {
-  user: User | null;
+  user: FirebaseUser | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -39,29 +42,34 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{children: React.ReactNode}> = ({
   children,
 }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Lazy initialize auth on web only
-  const getAuthInstance = () => {
-    if (Platform.OS !== 'web' || !app) {
+
+  const auth = useMemo<FirebaseAuthInstance | null>(() => {
+    const module = ensureFirebaseAuthModule();
+    if (!module || !firebaseApp) {
       return null;
     }
-    return getAuth(app);
-  };
-  
-  const auth = getAuthInstance();
+    return module.getAuth(firebaseApp);
+  }, []);
 
   useEffect(() => {
     if (!auth) {
       setIsLoading(false);
       return;
     }
-    
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setIsLoading(false);
-    });
+
+    const unsubscribe = firebaseAuthModule!.onAuthStateChanged(
+      auth,
+      currentUser => {
+        setUser(currentUser);
+        setIsLoading(false);
+      },
+      error => {
+        console.error('Auth state error:', error);
+        setIsLoading(false);
+      },
+    );
 
     return unsubscribe;
   }, [auth]);
@@ -71,10 +79,10 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({
       Alert.alert('Not Available', 'Authentication is only available on web');
       return;
     }
-    
+
     try {
       setIsLoading(true);
-      await signInWithEmailAndPassword(auth, email, password);
+      await firebaseAuthModule!.signInWithEmailAndPassword(auth, email, password);
       Alert.alert('✅ Success!', 'Signed in successfully!');
     } catch (error: any) {
       Alert.alert('Sign In Failed', error.message);
@@ -89,10 +97,10 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({
       Alert.alert('Not Available', 'Authentication is only available on web');
       return;
     }
-    
+
     try {
       setIsLoading(true);
-      await createUserWithEmailAndPassword(auth, email, password);
+      await firebaseAuthModule!.createUserWithEmailAndPassword(auth, email, password);
       Alert.alert('✅ Success!', 'Account created! You are now signed in.');
     } catch (error: any) {
       Alert.alert('Sign Up Failed', error.message);
@@ -106,8 +114,8 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({
     try {
       if (Platform.OS === 'web' && auth) {
         setIsLoading(true);
-        const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
+        const provider = new firebaseAuthModule!.GoogleAuthProvider();
+        await firebaseAuthModule!.signInWithPopup(auth, provider);
         Alert.alert('✅ Success!', 'Signed in with Google!');
       } else {
         Alert.alert('Info', 'Google sign-in available on web version');
@@ -124,9 +132,9 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({
     if (!auth) {
       return;
     }
-    
+
     try {
-      await signOut(auth);
+      await firebaseAuthModule!.signOut(auth);
       Alert.alert('Signed Out', 'You have been signed out');
     } catch (error: any) {
       Alert.alert('Error', error.message);
