@@ -8,6 +8,7 @@ import {
   Linking,
   Alert,
   Switch,
+  Platform,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Ionicons} from '@expo/vector-icons';
@@ -403,7 +404,6 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   premiumCard: {
-    backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     backgroundColor: '#007AFF',
     margin: 15,
     padding: 30,
@@ -469,9 +469,6 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: 'bold',
     fontSize: 14,
-  },
-  adBanner: {
-    marginTop: 20,
   },
 });
 

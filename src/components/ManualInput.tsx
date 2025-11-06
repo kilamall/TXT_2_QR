@@ -94,12 +94,15 @@ const ManualInput: React.FC<ManualInputProps> = ({onSubmit}) => {
 
           // Import OCR function
           const {extractTextFromImage} = require('../utils/cloudOCR');
-          
+
           // Extract text
-          const extractedText = await extractTextFromImage(base64, (status) => {
-            console.log('OCR:', status);
-            setUploadProgress(70);
-          });
+          const extractedText = await extractTextFromImage(
+            base64,
+            (status: string) => {
+              console.log('OCR:', status);
+              setUploadProgress(70);
+            },
+          );
 
           setUploadProgress(100);
           setIsUploading(false);

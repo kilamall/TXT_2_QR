@@ -19,8 +19,6 @@ const ScanScreen = () => {
     timestamp: Date;
   } | null>(null);
 
-  const isSimulator = Platform.OS === 'ios' && !Platform.isPad && Platform.isTVOS === false;
-
   const handleScanned = (data: string) => {
     setLastScanned({
       data,

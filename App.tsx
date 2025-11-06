@@ -1,28 +1,12 @@
-import React, {useEffect} from 'react';
+import React from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {Platform} from 'react-native';
 import MainNavigator from './src/navigation/MainNavigator';
 import {QRProvider} from './src/context/QRContext';
 import {PremiumProvider} from './src/context/PremiumContext';
+import {AuthProvider} from './src/context/AuthContext';
 
 function AppContent() {
-  useEffect(() => {
-    // Initialize AdMob (mobile only)
-    if (Platform.OS !== 'web') {
-      import('react-native-google-mobile-ads').then(({default: mobileAds}) => {
-        mobileAds()
-          .initialize()
-          .then(() => {
-            console.log('AdMob initialized');
-          })
-          .catch(error => {
-            console.log('AdMob init error:', error);
-          });
-      });
-    }
-  }, []);
-
   return (
     <SafeAreaProvider>
       <AuthProvider>
